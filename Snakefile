@@ -614,7 +614,7 @@ rule filter_SP_for_absence_of_TM_helice:
         "python scripts/transmembrane_filter.py  --phobius {input.phobius} --tmhmm {input.tmhmm} --signalp_union_id {input.union_idlist} --output {output}"
 
 
-# 
+#  
 
 
 
