@@ -1,0 +1,38 @@
+# basic settings
+ref: data/Pst198E.v2.repeat-masked.hapA.fasta    # soft-masked
+ONT_cDNA_fastq: data/Pst198E.all_conditions.hapA.merged.fastq.gz
+preassembled_transcripts_fasta: data/Pst198E.concatenated.espresso_stringtie3.hapA.fasta
+preassembled_transcripts_gtf: data/Pst198E.merged.espresso-stringtie3.transcripts.hapA.gtf
+spores_gtf: data/Pst198E.spores.merged.espresso-stringtie3.transcripts.hapA.gtf   # provided by transcriptome assembly snakemake pipeline 
+infections_gtf: data/Pst198E.infections.merged.espresso-stringtie3.transcripts.hapA.gtf   # provided by transcriptome assembly snakemake pipeline 
+
+outdir: Pst198E_hapA_funannotate_output
+
+ONT_cDNA_filt_quality: 12   # if you don't need filtering, put False
+funannotate_species_name: Puccinia striiformis
+funannotate_isolate_name: Pst198E_hapA
+funannotate_locus_tag: Pst198E
+
+
+protein_evidence: ["/mnt/data/wright/home/groups/schwessinger/db/funannotate_db/uniprot_sprot.fasta", "/mnt/data/wright/home/groups/schwessinger/db/funannotate_db/Pst104E_v3.9.proteins.faa", "/mnt/data/wright/home/groups/schwessinger/db/funannotate_db/Pst_104E_v13_h_ctg.protein.fa"] # provide as a list of absolute paths
+
+
+##################################################
+## environment settings, should leave untouched ##
+##################################################
+funannotate_db_dir: /mnt/data/wright/home/groups/schwessinger/db/funannotate_db
+genemark_dir: /mnt/data/wright/home/groups/schwessinger/db/funannotate_db/gmes_linux_64_4
+eggnog_data_dir: /mnt/data/wright/home/groups/schwessinger/db/eggnog-mapper/data
+codingquarry_dir: /mnt/data/wright/home/groups/schwessinger/softwares/CodingQuarry_v2.0
+signalp3_bin: /mnt/data/wright/home/groups/schwessinger/softwares/signalp-3.0/signalp
+signalp4_bin: /mnt/data/wright/home/groups/schwessinger/softwares/signalp-4.1/signalp
+tmhmm_dir: /mnt/data/wright/home/groups/schwessinger/softwares/tmhmm-2.0c/bin
+phobius_dir: /mnt/data/wright/home/groups/schwessinger/softwares/phobius
+threads: 48
+
+chopper_conda_env: /mnt/data/wright/home/groups/schwessinger/condaEnvs/chopper
+gffread_conda_env: /mnt/data/wright/home/groups/schwessinger/condaEnvs/nanopore-cDNA
+agat_conda_env: /mnt/data/wright/home/groups/schwessinger/condaEnvs/nanopore-cDNA
+funannotate_conda_env: /mnt/data/wright/home/groups/schwessinger/condaEnvs/funannotate
+codingquarry_conda_env: /mnt/data/wright/home/groups/schwessinger/condaEnvs/py2
+signalp6_conda_env: /mnt/data/wright/home/groups/schwessinger/condaEnvs/signalp6
