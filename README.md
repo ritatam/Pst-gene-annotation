@@ -18,5 +18,6 @@ Transcriptome assembly and genome repeat-masking are NOT included, might be adde
 
 - conda env handling
 - TM detection in SignalP unions faa can be better
+- gene expression analysis (maybe somewhere else)
 
-bla bla bla
+yadda yadda ~~
