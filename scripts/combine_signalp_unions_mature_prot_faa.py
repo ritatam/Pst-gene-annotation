@@ -4,9 +4,10 @@ import argparse
 
 
 def combine_unions_faa(union_idlist, signalp3_mature_faa, signalp4_mature_faa, signalp6_mature_faa, output_union_faa, report_file="report.txt"):
-    signalp3_seq = {record.id.split(" ")[0]: str(record.seq) for record in SeqIO.parse(signalp3_mature_faa, "fasta")}
-    signalp4_seq = {record.id.split(" ")[0]: str(record.seq) + "*" for record in SeqIO.parse(signalp4_mature_faa, "fasta")}  # signalp4 lacks stop codon
-    signalp6_seq = {record.id.split(" ")[0]: str(record.seq) for record in SeqIO.parse(signalp6_mature_faa, "fasta")}
+    # fetch complete sequences with start and stop codon
+    signalp3_seq = {record.id.split(" ")[0]: str(record.seq) for record in SeqIO.parse(signalp3_mature_faa, "fasta") if str(record.seq).endswith("*")} 
+    signalp4_seq = {record.id.split(" ")[0]: str(record.seq) + "*" for record in SeqIO.parse(signalp4_mature_faa, "fasta")}   # signalp4 lacks stop codon
+    signalp6_seq = {record.id.split(" ")[0]: str(record.seq) for record in SeqIO.parse(signalp6_mature_faa, "fasta") if str(record.seq).endswith("*")}
 
     # prep report entries
     report = {"total_processed": 0, "one_version": 0, "multiple_versions": 0,
@@ -72,8 +73,8 @@ def combine_unions_faa(union_idlist, signalp3_mature_faa, signalp4_mature_faa, s
         # write report summary to file
         report_out.write("Summary Report\n")
         report_out.write(f"total union IDs processed: {report['total_processed']}\n")
-        report_out.write(f"tound in one SignalP version: {report['one_version']}\n")
-        report_out.write(f"tound in multiple versions: {report['multiple_versions']}\n")
+        report_out.write(f"found in one SignalP version: {report['one_version']}\n")
+        report_out.write(f"found in multiple versions: {report['multiple_versions']}\n")
         report_out.write(f"\t- all sequences identical: {report['identical_seqs']}\n")
         report_out.write(f"\t- different sequences: {report['different_seqs']}\n")
         report_out.write(f"\t- majority used: {report['majority_seq']}\n")
