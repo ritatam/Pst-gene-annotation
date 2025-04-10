@@ -40,10 +40,10 @@ infections_prefix = os.path.basename(INFECTIONS_GTF).split('.gtf')[0]
 
 rule all:
     input:
+        #f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.genes.gff3"
+        # f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.gff3"
         f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.secretome.gff3",
         f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.gff3"
-        # f"{OUTDIR}/final.gff3",
-        #f"{OUTDIR}/final.secretome.gff3"
 
 
 if type(ONT_CDNA_FILT_Q) == int:
@@ -424,7 +424,7 @@ rule extract_transdecoder_SP_noTM_genes_gff3:    # plus some attribute and name 
 
 # this step merges funannotate_update gff3 and transdecoder SP gff3 together. 
 # note that the agat merge step only merges completely identical isoforms including the non-coding exons structures
-rule merge_transdecoderSP_with_funannotate:
+rule merge_transdecoder_SP_gff3_with_funannotate_gff3:
     input:
         ref = SORTED_REF,
         funannotate_update_gff3 = f"{FUNANNOTATE_OUTDIR}/update_results/{FUNANNOTATE_OUT_PREFIX}.gff3",
@@ -437,25 +437,41 @@ rule merge_transdecoderSP_with_funannotate:
     shell:
         conda_init_cmd+"{config[gffread_conda_env]}; "
         "cd {params}; "
-        "agat_sp_merge_annotations.pl -f {input.funannotate_update_gff3} -f {input.transdecoder_genome_SP_gff3} -o {output.tmp1}; "
+        "agat_sp_merge_annotations.pl -f {input.funannotate_update_gff3} -f {input.transdecoder_genome_SP_gff3} -o {output.tmp}; "
         "conda deactivate; "+
         conda_init_cmd+"{config[funannotate_conda_env]}; "
-        "funannotate gff-rename -g {output.tmp1} -f {input.ref} -o {output.gff3} --locus_tag {config[funannotate_locus_tag]} --numbering {config[funannotate_numbering_start]}"
+        "funannotate gff-rename -g {output.tmp} -f {input.ref} -o {output.gff3} --locus_tag {config[funannotate_locus_tag]} --numbering {config[funannotate_numbering_start]}"
+
+
+# deduplicate isoforms that have identical CDS. keeps the first transcript ID (i.e. smallest number after "-T") that it encounters in every unique CDS coordinate set.
+# outputs two files:
+# (1) deduplicated CDS gff3, useful for expression analysis; 
+# (2) full gff3 deduplicated using the CDS ids from (1), thus including other features eg genes, exons, UTRs and tRNA entries.
+rule deduplicate_cds_gff3:
+    input:
+        f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.gff3"
+    output:
+        cds = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/dedup/funannotate_update.transdecoder_SP_TM-filtered.merged.dedup.cds.gff3",
+        full = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/dedup/funannotate_update.transdecoder_SP_TM-filtered.merged.dedup.full.gff3"
+    shell:
+        "python scripts/deduplicate_CDS_gff.py -i {input} --dedup_cds_gff3_out {output.cds} --dedup_full_gff3_out {output.full}"
 
 
 rule get_protein_and_cds_sequences_from_merged_gff3:
     input:
         ref = SORTED_REF,
-        merged_gff3 = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.gff3"
+        dedup_cds_gff3 = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/dedup/funannotate_update.transdecoder_SP_TM-filtered.merged.dedup.cds.gff3",
+        dedup_full_gff3 = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/dedup/funannotate_update.transdecoder_SP_TM-filtered.merged.dedup.full.gff3"
     output:
         folded_ref = f"{DATA_OUTDIR}/{os.path.splitext(os.path.basename(REF))[0]}.sorted.folded.fasta",
-        prot_tmp = temp(f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.protein.tmp"),
-        cds_tmp = temp(f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.cds.tmp"),
-        prot = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.protein.faa",
-        cds = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.cds.fna",
+        prot_tmp = temp(f"{TRANSDECODER_SP_RESCUE_OUTDIR}/dedup/funannotate_update.transdecoder_SP_TM-filtered.merged.dedup.protein.tmp"),
+        cds_tmp = temp(f"{TRANSDECODER_SP_RESCUE_OUTDIR}/dedup/funannotate_update.transdecoder_SP_TM-filtered.merged.dedup.cds.tmp"),
+        prot = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/dedup/funannotate_update.transdecoder_SP_TM-filtered.merged.dedup.protein.faa",
+        cds = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/dedup/funannotate_update.transdecoder_SP_TM-filtered.merged.dedup.cds.fna",
         symlink_prot = f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.protein.faa",
         symlink_cds = f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.cds.fna",
-        symlink_gff3 = f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.cds.gff3",
+        symlink_cds_gff3 = f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.cds.gff3",
+        symlink_full_gff3 = f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.genes.gff3"
     params:
         f"{SIGNALP_OUTDIR}"
     shell:
@@ -463,15 +479,16 @@ rule get_protein_and_cds_sequences_from_merged_gff3:
         """
         fold {input.ref} > {output.folded_ref}; 
         cd {params}; 
-        agat_sp_extract_sequences.pl --gff {input.merged_gff3} -f {output.folded_ref} -o {output.prot_tmp} -t cds -p ; 
-        agat_sp_extract_sequences.pl --gff {input.merged_gff3} -f {output.folded_ref} -o {output.cds_tmp} -t cds ;
+        agat_sp_extract_sequences.pl --gff {input.dedup_cds_gff3} -f {output.folded_ref} -o {output.prot_tmp} -t cds -p ; 
+        agat_sp_extract_sequences.pl --gff {input.dedup_cds_gff3} -f {output.folded_ref} -o {output.cds_tmp} -t cds ;
         awk '!/^>/ {{printf "%s", $0; n="\\n"}} /^>/ {{print n$0; n=""}} END {{printf "%s",n}}' {output.prot_tmp} > {output.prot}; 
         awk '!/^>/ {{printf "%s", $0; n="\\n"}} /^>/ {{print n$0; n=""}} END {{printf "%s",n}}' {output.cds_tmp} > {output.cds}; 
         """ #unwrap fasta
         "mkdir -p {params}; "
         "ln -sr {output.prot} {output.symlink_prot}; "
         "ln -sr {output.cds} {output.symlink_cds}; "
-        "ln -sr {input.merged_gff3} {output.symlink_gff3}"
+        "ln -sr {input.dedup_cds_gff3} {output.symlink_cds_gff3}; "
+        "ln -sr {input.dedup_full_gff3} {output.symlink_full_gff3}"
 
 
 rule signalp3:
@@ -602,18 +619,21 @@ rule filter_SP_for_absence_of_TM_helice:
 
 rule extract_secretome_genes_gff3:
     input:
-        gff3 = f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.gff3",
+        gff3 = f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.genes.gff3",
         signalp_union_idlist = f"{SIGNALP_OUTDIR}/signalp.mature_prot.union.TM-filtered.IDlist"
     output:
         f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.secretome.gff3"
+    params:
+        SIGNALP_OUTDIR
     shell:
         conda_init_cmd+"{config[gffread_conda_env]}; "
+        "cd {params}; "
         "agat_sp_filter_feature_from_keep_list.pl --gff {input.gff3} --keep_list {input.signalp_union_idlist} -o {output}"
     
 
-rule copy_final_genes_gff3:
+rule copy_all_genes_gff3:
     input:
-        f"{TRANSDECODER_SP_RESCUE_OUTDIR}/funannotate_update.transdecoder_SP_TM-filtered.merged.gff3"
+        f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.genes.gff3"
     output:
         f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.gff3"
     shell:

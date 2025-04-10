@@ -3,7 +3,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH -t 168:00:00
-#SBATCH --mem-per-cpu=500M # megabytes
+#SBATCH --mem-per-cpu=300M # megabytes
 #SBATCH -J SNAKE
 #SBATCH -o SNAKE.o%j
 #SBATCH -e SNAKE.e%j
