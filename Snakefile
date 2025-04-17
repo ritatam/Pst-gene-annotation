@@ -415,9 +415,9 @@ rule extract_transdecoder_SP_noTM_genes_gff3:    # plus some attribute and name 
     params:
         TRANSDECODER_SP_RESCUE_OUTDIR
     shell: 
+        "python scripts/extract_transdecoder_SP_transcripts.py --in_gff3 {input.transdecoder_genome_gff3} --in_secretome_ids {input.signalp_union_idlist} --out_gff3 {output.tmp1}; "+
         conda_init_cmd+"{config[gffread_conda_env]}; "
         "cd {params}; "
-        "agat_sp_filter_feature_from_keep_list.pl --gff {input.transdecoder_genome_gff3} --keep_list {input.signalp_union_idlist} -o {output.tmp1}; "
         "agat_sp_manage_attributes.pl -f {output.tmp1} --att Name -o {output.tmp2}; "
         "sed -e 's/\^.*\^-//g' -e 's/\^.*\^+//g' {output.tmp2} > {output.gff3}"
 
@@ -622,22 +622,24 @@ rule extract_secretome_genes_gff3:
         gff3 = f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.genes.gff3",
         signalp_union_idlist = f"{SIGNALP_OUTDIR}/signalp.mature_prot.union.TM-filtered.IDlist"
     output:
-        f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.secretome.gff3"
+        gff3 = f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.secretome.gff3",
+        cds_gff3 = f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.secretome.cds.gff3"
     params:
         SIGNALP_OUTDIR
     shell:
-        conda_init_cmd+"{config[gffread_conda_env]}; "
-        "cd {params}; "
-        "agat_sp_filter_feature_from_keep_list.pl --gff {input.gff3} --keep_list {input.signalp_union_idlist} -o {output}"
+        "python scripts/extract_secretome_gff3.py --in_gff3 {input.gff3} --in_secretome_ids {input.signalp_union_idlist} --out_gff3 {output.gff3}; "
+        "grep -P '\tCDS\t' {output.gff3} > {output.cds_gff3}"
     
 
 rule copy_all_genes_gff3:
     input:
         f"{SIGNALP_OUTDIR}/funannotate.transdecoder-SP.combined.genes.gff3"
     output:
-        f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.gff3"
+        gff3 = f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.gff3",
+        cds_gff3 = f"{OUTDIR}/{FUNANNOTATE_OUT_PREFIX}.genes.cds.gff3"
     shell:
-        "cp {input} {output}"
+        "cp {input} {output.gff3}; "
+        "grep -P '\tCDS\t' {output.gff3} > {output.cds_gff3}"
 
 
 
